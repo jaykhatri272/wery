@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Career Guidance Bot</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        #question-container { margin-bottom: 20px; }
+        #response { margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>Career Guidance Bot</h1>
+    <div id="question-container">
+        <p id="question">Loading question...</p>
+        <input type="text" id="answer" placeholder="Type your answer here">
+        <button onclick="submitAnswer()">Submit</button>
+    </div>
+    <div id="response"></div>
+
+    <script>
+        let currentQuestionIndex = 0;
+        const questions = {{ questions|tojson }};
+        
+        function loadQuestion() {
+            if (currentQuestionIndex < questions.length) {
+                document.getElementById('question').textContent = questions[currentQuestionIndex].question;
+            } else {
+                // When all questions are answered, send responses to the backend
+                fetch('/submit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ responses: window.responses })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById('response').innerHTML = `<h2>Career Suggestions:</h2><ul>${data.suggestions.map(s => `<li>${s}</li>`).join('')}</ul>`;
+                });
+            }
+        }
+
+        function submitAnswer() {
+            const answer = document.getElementById('answer').value;
+            const questionText = questions[currentQuestionIndex].question;
+            
+            // Initialize responses object if not present
+            if (typeof window.responses === 'undefined') {
+                window.responses = {};
+            }
+
+            if (!window.responses[questionText]) {
+                window.responses[questionText] = [];
+            }
+            
+            window.responses[questionText].push(answer);
+
+            document.getElementById('answer').value = '';
+            currentQuestionIndex++;
+            loadQuestion();
+        }
+
+        // Initialize first question
+        loadQuestion();
+    </script>
+</body>
+</html>
